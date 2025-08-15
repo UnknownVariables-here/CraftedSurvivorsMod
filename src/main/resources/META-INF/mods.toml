@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[52,)"
+license="All rights reserved"
+
+[[mods]]
+modId="craftedsurvivors"
+version="1.0.0"
+displayName="Crafted Survivors Mod"
+authors="Mr tot"
+description='''
+A mod created by Tot. Its a server sided mod based on a youtube series. It allows a scoreboard system with 3 phases. Every player descends one phase when killed by any mean. If they reach 0 they die forever!
+Goal is to be the last player standing! But be aware, not all players are playing nice and might turn criminal for killing other players!!!
+    '''
+[[dependencies.craftedsurvivors]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.21,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.craftedsurvivors ]]
+modId="forge"
+mandatory=true
+versionRange="[52,)"
+ordering="NONE"
+side="BOTH"
+
