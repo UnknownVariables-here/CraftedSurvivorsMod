@@ -1,6 +1,5 @@
 package com.tot.craftedsurvivors.platform;
 
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
@@ -16,20 +15,26 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
-import static com.mojang.brigadier.builder.LiteralArgumentBuilder.literal;
 import static com.tot.craftedsurvivors.CommonCraftedSurvivorsMod.*;
 
 @Mod("craftedsurvivors")
 public class ScoreboardHelper {
-    public ScoreboardHelper(IEventBus modEventBus) {
 
+    // Track last known lives, hope this reduces lag
+    private final Map<UUID, Integer> lastLives = new HashMap<>();
+
+    public ScoreboardHelper(IEventBus modEventBus) {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    //initialize display and lives
+    // Initialize display
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = (ServerPlayer) event.getEntity();
@@ -48,33 +53,34 @@ public class ScoreboardHelper {
                 );
                 scoreboard.getOrCreatePlayerScore(player, livesObj).set(3);
             }
+
             Objective displayObj = scoreboard.getObjective("player_display");
             if (displayObj != null) {
                 scoreboard.setDisplayObjective(DisplaySlot.SIDEBAR, null);
                 scoreboard.removeObjective(displayObj);
             }
+
             displayObj = scoreboard.addObjective(
                     "player_display",
                     ObjectiveCriteria.DUMMY,
-                    Component.literal("§a❤ Lives ❤"), //title
+                    Component.literal("§a❤ Lives ❤"),
                     ObjectiveCriteria.RenderType.INTEGER,
                     false,
                     null
             );
-            String heartColor = getHeartColor(player);
+
             int lives = scoreboard.getOrCreatePlayerScore(player, livesObj).get();
+            String heartColor = getHeartColor(player);
             String hearts = heartColor + "❤".repeat(Math.max(0, lives));
             scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(hearts), displayObj).set(lives);
 
             // Force display update
             scoreboard.setDisplayObjective(DisplaySlot.SIDEBAR, displayObj);
-            player.connection.send(new ClientboundSetDisplayObjectivePacket(
-                    DisplaySlot.SIDEBAR,
-                    displayObj
-            ));
+            player.connection.send(new ClientboundSetDisplayObjectivePacket(DisplaySlot.SIDEBAR, displayObj));
         });
     }
-    // setup teams if they don't exist
+
+    // Setup teams if they don't exist
     @SubscribeEvent
     public void onServerStart(ServerAboutToStartEvent event) {
         MinecraftServer server = event.getServer();
@@ -84,6 +90,7 @@ public class ScoreboardHelper {
         createTeamIfMissing(scoreboard, "healthyteam", Component.literal("Healthy"), ChatFormatting.GREEN);
         createTeamIfMissing(scoreboard, "atriskteam", Component.literal("At Risk"), ChatFormatting.YELLOW);
     }
+
     public PlayerTeam createTeamIfMissing(Scoreboard scoreboard,
                                           String id,
                                           Component displayName,
@@ -96,28 +103,28 @@ public class ScoreboardHelper {
         team.setPlayerPrefix(Component.empty().withStyle(color));
         return team;
     }
-    //anytime the score is changed the display is updated
 
-    // this isnt working anymore and needs some king of rewrite
-    @SubscribeEvent
-    public void onScoreChanged(PlayerEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            String objectiveName = player.getScoreboardName() + "_lives";
-            Objects.requireNonNull(player.getServer()).execute(() -> {
-                Scoreboard scoreboard = player.getServer().getScoreboard();
-                Objective livesObj = scoreboard.getObjective(objectiveName);
+    // Anytime the score changes, this now should update display using ticks
+    /*@SubscribeEvent
+    public void onPlayerTick(PlayerTickEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-                if (livesObj != null) {
-                    // Get current lives value
-                    int lives = scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(player.getScoreboardName()), livesObj).get();
+        String objectiveName = player.getScoreboardName() + "_lives";
+        Scoreboard scoreboard = player.getServer().getScoreboard();
+        Objective livesObj = scoreboard.getObjective(objectiveName);
 
-                    // Update the display
-                    updatePlayerScoreboard(player);
-                }
-            });
+        if (livesObj != null) {
+            int lives = scoreboard.getOrCreatePlayerScore(player, livesObj).get();
+            int old = lastLives.getOrDefault(player.getUUID(), -1);
+
+            if (lives != old) {
+                lastLives.put(player.getUUID(), lives);
+                updatePlayerScoreboard(player);
+            }
         }
-    }
-    // Whenever a player dies their score is deducted
+    }*/
+
+    // Whenever a player respawns, remove one Life
     @SubscribeEvent
     public void onPlayerDeath(PlayerEvent.PlayerRespawnEvent event) {
         ServerPlayer player = (ServerPlayer) event.getEntity();
@@ -133,6 +140,8 @@ public class ScoreboardHelper {
             }
         });
     }
+
+    // Criminal to yellow
     @SubscribeEvent
     public void onPlayerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
