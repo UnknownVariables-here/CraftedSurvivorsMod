@@ -203,7 +203,7 @@ public class Main {
             handleLifeChange(nearestSpectator, data);
             checkLastLife(nearestSpectator, data);
             nearestSpectator.sendSystemMessage(
-                    Component.literal("You were reborn from " + data.getName() + "'s sacrifice")
+                    Component.literal("You were reborn from " + player.getScoreboardName() + "'s sacrifice")
                             .withStyle(ChatFormatting.GREEN),
                     false
             );
@@ -268,7 +268,7 @@ public class Main {
         if (Config.instance.lastLifeKillGainEnabled && killerData.getLives() <= 1) {
             killerData.setLives(killerData.getLives() + 1);
             killer.sendSystemMessage(
-                    Component.literal("You gained a life for taking one of " + victim.getScoreboardName() + "'s lives.. But at what cost?")
+                    Component.literal("You gained a life by taking one of " + victim.getScoreboardName() + "'s lives.. But at what cost?")
                             .withStyle(ChatFormatting.RED),
                     false
             );
@@ -284,7 +284,7 @@ public class Main {
             );
         }
     }
-    // Tablist + Glow
+    // Tablist + Glow + Hearts
     private static void applyPlayerData(ServerPlayer player) {
         PlayerLifeData data = playerData.get(player.getUUID());
         if (data == null) return;
