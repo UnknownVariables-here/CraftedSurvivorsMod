@@ -19,7 +19,7 @@ public class PlayerDataManager {
     public static void init(Path configDir) {
         try {
             Files.createDirectories(configDir);
-            dataFile = configDir.resolve("craftedsurvivors_playerdata.json");
+            dataFile = configDir.resolve("playerdata.json");
             loadData();
         } catch (IOException e) {
             System.err.println("Failed to create data directory: " + e.getMessage());
