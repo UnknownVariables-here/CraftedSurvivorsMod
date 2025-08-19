@@ -43,64 +43,39 @@ import static net.minecraft.world.level.GameType.SURVIVAL;
 public class Main {
     private static final int DEFAULT_LIVES = 3;
     public static final Map<UUID, PlayerLifeData> playerData = new ConcurrentHashMap<>();
-
     public Main(IEventBus modEventBus) {
         modEventBus.addListener(this::onModSetup);
         NeoForge.EVENT_BUS.register(this);
     }
-
     private void onModSetup(FMLCommonSetupEvent event) {
         Path dataDir = FMLPaths.CONFIGDIR.get().resolve("craftedsurvivors");
         PlayerDataManager.init(dataDir);
         Path configPath = dataDir.resolve("Config.json");
         Config.init(configPath);
     }
-
     // Player Life Data
     public static class PlayerLifeData {
         private int lives;
         private final String name;
         private boolean criminal;
-
-        public PlayerLifeData(int lives, String name) {
-            this.lives = Math.max(0, lives);
-            this.name = name;
-        }
-
-        public int getLives() {
-            return lives;
-        }
-
-        public void setLives(int lives) {
-            this.lives = Math.max(0, lives);
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public boolean isCriminal() {
-            return criminal;
-        }
-
-        public void setCriminal(boolean criminal) {
-            this.criminal = criminal;
-        }
+        public PlayerLifeData(int lives, String name) {this.lives = Math.max(0, lives);this.name = name;}
+        public int getLives() {return lives;}
+        public void setLives(int lives) {this.lives = Math.max(0, lives);}
+        public String getName() {return name;}
+        public boolean isCriminal() {return criminal;}
+        public void setCriminal(boolean criminal) {this.criminal = criminal;}
     }
-
     // Events
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         PlayerDataManager.saveData();
     }
-
     @SubscribeEvent
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
             PlayerDataManager.saveData();
         }
     }
-
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
@@ -111,7 +86,6 @@ public class Main {
             applyPlayerData(player);
         }
     }
-
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
@@ -145,7 +119,6 @@ public class Main {
                                 }))
         );
     }
-
     @SubscribeEvent
     public void onPlayerDeath(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
@@ -184,7 +157,6 @@ public class Main {
             }
         }
     }
-
     @SubscribeEvent
     public void onLivingDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer victim) {
@@ -194,7 +166,6 @@ public class Main {
             }
         }
     }
-
     @SubscribeEvent
     public void onPlayerUseItem(PlayerInteractEvent.RightClickItem event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -238,7 +209,6 @@ public class Main {
             );
         }
     }
-
     // Logic
     private void resetAllPlayers(CommandSourceStack source) {
         int resetCount = 0;
@@ -255,13 +225,12 @@ public class Main {
             }
         }
         PlayerDataManager.saveData();
-        final int count = resetCount; // make a final copy
+        final int count = resetCount;
         source.sendSuccess(() -> Component.literal(
                 "Reset " + count + " players to default lives and cleared criminal status"
         ), true);
 
     }
-
     public void setLives(UUID playerId, int amount) {
         PlayerLifeData data = playerData.get(playerId);
         if (data != null) {
@@ -275,7 +244,6 @@ public class Main {
             }
         }
     }
-
     private void handleLifeChange(ServerPlayer player, PlayerLifeData data) {
         if (data.getLives() < 1 && player.gameMode.getGameModeForPlayer() == SURVIVAL) {
             player.setGameMode(SPECTATOR);
@@ -284,7 +252,6 @@ public class Main {
             player.setGameMode(SURVIVAL);
         }
     }
-
     private void handlePlayerKill(ServerPlayer killer, ServerPlayer victim) {
         PlayerLifeData killerData = playerData.get(killer.getUUID());
         PlayerLifeData victimData = playerData.get(victim.getUUID());
@@ -309,7 +276,6 @@ public class Main {
             handleLifeChange(killer, killerData);
         }
     }
-
     private static void checkLastLife(ServerPlayer player, PlayerLifeData data) {
         if (data.getLives() == 1) {
             player.sendSystemMessage(
@@ -318,7 +284,6 @@ public class Main {
             );
         }
     }
-
     // Tablist + Glow
     private static void applyPlayerData(ServerPlayer player) {
         PlayerLifeData data = playerData.get(player.getUUID());
@@ -346,7 +311,6 @@ public class Main {
         scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
         player.refreshTabListName();
     }
-
     private static Component getHearts(int lives, boolean criminal) {
         ChatFormatting color = criminal ? ChatFormatting.DARK_PURPLE : switch (lives) {
             case 0 -> ChatFormatting.DARK_GRAY;
