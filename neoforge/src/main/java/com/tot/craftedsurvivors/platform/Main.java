@@ -50,7 +50,6 @@ public class Main {
         private int lives;
         private final String name;
         private boolean criminal;
-
         public PlayerLifeData(int lives, String name) {
             this.lives = Math.max(0, lives);
             this.name = name;
@@ -77,6 +76,8 @@ public class Main {
         if (event.getEntity() instanceof ServerPlayer player) {
             UUID id = player.getUUID();
             playerData.putIfAbsent(id, new PlayerLifeData(DEFAULT_LIVES, player.getScoreboardName()));
+            PlayerLifeData data = playerData.get(id);
+            handleLifeChange(player, data);
             applyPlayerData(player);
         }
     }
@@ -163,13 +164,11 @@ public class Main {
     private void resetAllPlayers(CommandSourceStack source) {
         int resetCount = 0;
         MinecraftServer server = source.getServer();
-
         for (Map.Entry<UUID, PlayerLifeData> entry : playerData.entrySet()) {
             PlayerLifeData data = entry.getValue();
             data.setLives(DEFAULT_LIVES);
             data.setCriminal(false);
             resetCount++;
-
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player != null) {
                 applyPlayerData(player);
@@ -204,14 +203,11 @@ public class Main {
     private void handlePlayerKill(ServerPlayer killer, ServerPlayer victim) {
         PlayerLifeData killerData = playerData.get(killer.getUUID());
         PlayerLifeData victimData = playerData.get(victim.getUUID());
-
         if (killerData == null || victimData == null) return;
-
         if (killerData.getLives() >= 3 && victimData.getLives() >= 3) {
             killerData.setCriminal(true);
             applyPlayerData(killer);
             applyPlayerData(victim);
-
             killer.sendSystemMessage(Component.literal("You've become a criminal!")
                     .withStyle(ChatFormatting.DARK_PURPLE), false);
             victim.sendSystemMessage(Component.literal("It seems you've been betrayed!")
@@ -228,6 +224,8 @@ public class Main {
         PlayerTeam team = scoreboard.getPlayerTeam(teamName);
         if (team == null) {
             team = scoreboard.addPlayerTeam(teamName);
+        }
+        if (!team.getPlayers().contains(player.getScoreboardName())) {
             scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
         }
         if (data.isCriminal()) {
@@ -239,6 +237,9 @@ public class Main {
         }
         Component hearts = getHearts(data.getLives(), data.isCriminal());
         team.setPlayerSuffix(Component.literal(" ").append(hearts));
+        scoreboard.removePlayerFromTeam(player.getScoreboardName(), team);
+        scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+        player.refreshTabListName();
     }
     private static Component getHearts(int lives, boolean criminal) {
         ChatFormatting color = criminal ? ChatFormatting.DARK_PURPLE : switch (lives) {
